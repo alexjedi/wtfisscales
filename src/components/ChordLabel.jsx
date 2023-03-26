@@ -1,4 +1,4 @@
-function Chord({ text, subtext, hasArrow, hasLongArrow }) {
+function ChordLabel({ text, subtext, hasArrow, hasLongArrow, isActive }) {
   return (
     <div
       className={`relative flex flex-col items-center space-y-1 ${
@@ -10,7 +10,11 @@ function Chord({ text, subtext, hasArrow, hasLongArrow }) {
       }`}
     >
       <div
-        className={`flex flex-col items-center justify-center min-w-[40px] h-10 border rounded-lg border-[#505050] bg-[#14171F]`}
+        className={`flex flex-col items-center justify-center min-w-[40px] h-10 border rounded-lg ${
+          isActive
+            ? 'border-[#585858] bg-[#2B2F3B]'
+            : 'border-[#505050] bg-[#14171F] hover:bg-[#2B2F3B]'
+        }`}
       >
         <span className="text-base text-white font-medium">{text}</span>
       </div>
@@ -19,4 +23,4 @@ function Chord({ text, subtext, hasArrow, hasLongArrow }) {
   )
 }
 
-export default Chord
+export default ChordLabel
