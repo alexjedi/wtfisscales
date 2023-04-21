@@ -82,9 +82,6 @@ function ChordFinder() {
           <span className="text-end text-sm">Modal Interchange</span>
         </div>
       </div>
-      <div className="w-full py-2">
-        <Slider min={0} max={modesList.length - 1} onChange={handleSliderChange} />
-      </div>
       <div className="w-full grid grid-cols-3 gap-6 place-items-stretch">
         {notes.map((note) => (
           <Button
