@@ -1,11 +1,14 @@
 import Button from '../components/Button.jsx'
-import { Chord, Scale, Note, Key } from 'tonal'
+import { Note, Key, RomanNumeral, Chord, Interval } from 'tonal'
 import {
   LockClosedIcon,
   TrashIcon,
   PlusIcon,
   SwatchIcon,
   BookmarkIcon,
+  ArrowUturnLeftIcon,
+  ArrowUturnRightIcon,
+  ShareIcon,
 } from '@heroicons/react/24/solid'
 
 import { useEffect, useState } from 'react'
@@ -13,6 +16,14 @@ import { useEffect, useState } from 'react'
 function getRandomKeyQuality() {
   const qualities = ['major', 'minor']
   return qualities[Math.floor(Math.random() * qualities.length)]
+}
+
+function generateRandomRootNote() {
+  let randomRoot
+  do {
+    randomRoot = Note.names()[Math.floor(Math.random() * 12)]
+  } while (randomRoot === undefined)
+  return randomRoot
 }
 
 function ChordJam() {
@@ -23,19 +34,23 @@ function ChordJam() {
   const [colors, setColors] = useState(generateColors(5))
 
   useEffect(() => {
+    setProgression(generateProgression(5))
+  }, [rootNote, keyQuality])
+
+  useEffect(() => {
     const handleKeyPress = (e) => {
       if (e.key === ' ') {
         e.preventDefault()
         regenerateProgression()
+      } else if (e.altKey) {
+        e.preventDefault()
+        setRootNote(generateRandomRootNote())
+        setKeyQuality(getRandomKeyQuality())
       }
     }
     window.addEventListener('keydown', handleKeyPress)
     return () => window.removeEventListener('keydown', handleKeyPress)
-  }, [locked, rootNote])
-
-  function generateRandomRootNote() {
-    return Note.names()[Math.floor(Math.random() * 12)]
-  }
+  }, [locked])
 
   function generateColors(length) {
     return Array.from({ length }, () => {
@@ -44,23 +59,37 @@ function ChordJam() {
     })
   }
 
-  function generateProgression(length) {
-    const key = keyQuality === 'major' ? Key.majorKey(rootNote) : Key.minorKey(rootNote)
-    const allChords = [
-      ...key.triads,
-      ...key.chords,
-      ...key.secondaryDominants,
-      ...key.secondaryDominantsMinorRelative,
-      ...key.substituteDominants,
-      ...key.substituteDominantsMinorRelative,
-    ]
-    const filteredChords = allChords.filter((chord) => chord !== '')
-    console.log(filteredChords)
+  function shuffleArray(array) {
+    const newArray = [...array]
+    for (let i = newArray.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1))
+      ;[newArray[i], newArray[j]] = [newArray[j], newArray[i]]
+    }
+    return newArray
+  }
 
-    return Array.from({ length }, () => {
-      const randomChordIndex = Math.floor(Math.random() * filteredChords.length)
-      return filteredChords[randomChordIndex]
-    })
+  function generateProgression(length) {
+    console.log(rootNote)
+    console.log(keyQuality)
+    let allChords = []
+    if (keyQuality === 'major') {
+      const key = Key.majorKey(rootNote)
+      allChords = [
+        ...(key?.triads ?? []),
+        ...(key?.chords ?? []),
+        ...(key?.secondaryDominants ?? []),
+        ...(key?.secondaryDominantsMinorRelative ?? []),
+        ...(key?.substituteDominants ?? []),
+        ...(key?.substituteDominantsMinorRelative ?? []),
+      ]
+    } else {
+      const key = Key.minorKey(rootNote)
+      allChords = [...(key?.natural?.triads ?? []), ...(key?.natural?.chords ?? [])]
+    }
+    const filteredChords = allChords.filter((chord) => chord !== '')
+    const shuffledChords = shuffleArray(filteredChords)
+
+    return shuffledChords.slice(0, length)
   }
 
   function regenerateProgression() {
@@ -76,16 +105,16 @@ function ChordJam() {
 
     const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255
 
-    return luminance > 0.5 ? 'text-gray-500' : 'text-white'
+    return luminance > 0.5 ? 'text-gray-800' : 'text-white'
   }
 
-  function updateRootNote(e) {
-    const newRoot = e.target.value.toUpperCase()
-    if (Note.names().includes(newRoot)) {
-      setRootNote(newRoot)
-      regenerateProgression()
-    }
-  }
+  // function updateRootNote(e) {
+  //   const newRoot = e.target.value.toUpperCase()
+  //   if (Note.names().includes(newRoot)) {
+  //     setRootNote(newRoot)
+  //     regenerateProgression()
+  //   }
+  // }
 
   function toggleLock(index) {
     setLocked((prev) => prev.map((lock, i) => (i === index ? !lock : lock)))
@@ -108,21 +137,48 @@ function ChordJam() {
   return (
     <div className="w-full h-full flex flex-col">
       <header className="w-full p-4 bg-white border-b border-gray-300 flex justify-between items-center">
-        <span className="text-gray-500">Press the spacebar to generate chord progressions</span>
-        <input
-          type="text"
-          value={rootNote}
-          onChange={updateRootNote}
-          className="text-gray-700 w-12 h-4"
-        />
-        <select value={keyQuality} onChange={(e) => setKeyQuality(e.target.value)}>
-          <option value="major">Major</option>
-          <option value="minor">Minor</option>
-        </select>
-        <button className="rounded px-2 py-1 text-gray-700 flex justify-center items-center space-x-2">
-          <BookmarkIcon className="h-4 w-4" />
-          <span className="text-sm">Save Progression</span>
-        </button>
+        <span className="text-gray-500">
+          Press <span className="text-gray-900 font-semibold">spacebar</span> to generate chord
+          progressions or <span className="text-gray-900 font-semibold">alt / opt</span> to change
+          the Key
+        </span>
+        <div className="flex justify-center items-center divide-x divide-gray-200">
+          <div className="flex items-center justify-center px-2">
+            <input
+              type="text"
+              value={rootNote}
+              // onChange={updateRootNote}
+              className="text-gray-700 w-4"
+            />
+            <select
+              value={keyQuality}
+              name="choice"
+              onChange={(e) => setKeyQuality(e.target.value)}
+              className="text-gray-700"
+            >
+              <option value="major">Major</option>
+              <option value="minor">Minor</option>
+            </select>
+          </div>
+          <div className="flex items-center justify-center px-2">
+            <button className="rounded px-2 py-1 text-gray-700 flex justify-center items-center space-x-2">
+              <ArrowUturnLeftIcon className="h-4 w-4" />
+            </button>
+            <button className="rounded px-2 py-1 text-gray-700 flex justify-center items-center space-x-2">
+              <ArrowUturnRightIcon className="h-4 w-4" />
+            </button>
+          </div>
+          <div className="flex items-center justify-center px-2">
+            <button className="rounded px-2 py-1 text-gray-700 flex justify-center items-center space-x-2">
+              <BookmarkIcon className="h-4 w-4" />
+              <span className="text-sm">Save</span>
+            </button>
+            <button className="rounded px-2 py-1 text-gray-700 flex justify-center items-center space-x-2">
+              <ShareIcon className="h-4 w-4" />
+              <span className="text-sm">Share</span>
+            </button>
+          </div>
+        </div>
       </header>
       <div className="flex h-full w-full">
         {progression.map((chord, index) => (
@@ -137,8 +193,14 @@ function ChordJam() {
                   colors[index]
                 )} w-full flex flex-col items-center space-y-3`}
               >
-                <span className="text-xl font-medium">{chord}</span>
-                <span className="text-lg font-medium">{index}</span>
+                <span className="text-lg font-medium">{chord}</span>
+                <span className="text-md font-medium">
+                  {
+                    RomanNumeral.get(
+                      Interval.get(Interval.distance(`${rootNote}`, Chord.degrees(chord)(1)))
+                    ).name
+                  }
+                </span>
               </div>
               <div className="flex flex-col items-center justify-end h-full w-full space-y-6 opacity-0 group-hover:opacity-100 transition-all duration-300 ease-out">
                 <button className={` ${getTextColor(colors[index])} font-bold py-1 px-2 rounded`}>
